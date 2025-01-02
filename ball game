@@ -1,0 +1,134 @@
+import pygame
+import sys
+import random
+
+# Initialize pygame
+pygame.init()
+
+# Screen dimensions
+WIDTH, HEIGHT = 800, 400
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+
+# Initialize screen
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Ball Jump Game")
+
+# Clock for controlling the frame rate
+clock = pygame.time.Clock()
+
+# Font for displaying text
+font = pygame.font.SysFont(None, 48)
+
+# Ball properties
+ball_radius = 20
+ball_x = 100
+ball_y = HEIGHT - ball_radius - 10
+ball_jump = False
+jump_height = 10
+fall_speed = 5
+
+# Obstacle properties
+obstacle_width = 20
+obstacle_height = 40
+obstacle_x = WIDTH
+obstacle_y = HEIGHT - obstacle_height - 10
+obstacle_speed = 5
+
+# Game variables
+score = 0
+chances = 3
+game_over = False
+ball_burst = False
+
+# Function to display text on the screen
+def draw_text(text, color, x, y):
+    screen_text = font.render(text, True, color)
+    screen.blit(screen_text, (x, y))
+
+while True:
+    screen.fill(WHITE)
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+
+        # Detect jump
+        if event.type == pygame.KEYDOWN and not ball_jump and not game_over:
+            if event.key == pygame.K_SPACE:
+                ball_jump = True
+
+    # Ball movement
+    if ball_jump:
+        ball_y -= jump_height
+        if ball_y <= HEIGHT - 150:
+            ball_jump = False
+    elif ball_y < HEIGHT - ball_radius - 10:
+        ball_y += fall_speed
+
+    # Obstacle movement
+    obstacle_x -= obstacle_speed
+    if obstacle_x < 0:
+        obstacle_x = WIDTH
+        score += 1
+
+    # Collision detection
+    if (
+        obstacle_x - ball_radius < ball_x < obstacle_x + obstacle_width + ball_radius
+        and ball_y + ball_radius > obstacle_y
+    ):
+        ball_burst = True
+
+    if ball_burst:
+        chances -= 1
+        if chances > 0:
+            ball_burst = False
+            obstacle_x = WIDTH
+            ball_y = HEIGHT - ball_radius - 10
+        else:
+            game_over = True
+
+    # Draw ball
+    pygame.draw.circle(screen, BLUE if not ball_burst else RED, (ball_x, ball_y), ball_radius)
+
+    # Draw obstacle
+    pygame.draw.rect(screen, BLACK, (obstacle_x, obstacle_y, obstacle_width, obstacle_height))
+
+    # Draw score and chances
+    draw_text(f"Score: {score}", BLACK, 10, 10)
+    draw_text(f"Chances: {chances}", BLACK, 10, 50)
+
+    # Game over message
+    if game_over:
+        draw_text("Game Over!", RED, WIDTH // 2 - 100, HEIGHT // 2 - 50)
+        draw_text("Press R to Restart", BLACK, WIDTH // 2 - 150, HEIGHT // 2)
+        pygame.display.flip()
+
+        # Wait for restart or quit
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                    # Reset game variables
+                    score = 0
+                    chances = 3
+                    game_over = False
+                    obstacle_x = WIDTH
+                    ball_y = HEIGHT - ball_radius - 10
+                    break
+            else:
+                continue
+            break
+
+    # Update the display
+    pygame.display.flip()
+
+    # Control the frame rate
+    clock.tick(30)
